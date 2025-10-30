@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}历史搜索结果 - AI PubMed Search{% endblock %}
+
+{% block content %}
+<div class="results-container">
+    <!-- 搜索信息 -->
+    <div class="results-header">
+        <h1><i class="fas fa-history"></i> 历史搜索结果</h1>
+        <div class="search-info">
+            <div class="info-item">
+                <strong>查询:</strong> {{ search_params.final_query }}
+            </div>
+            {% if search_params.user_topic %}
+            <div class="info-item">
+                <strong>主题:</strong> {{ search_params.user_topic }}
+            </div>
+            {% endif %}
+            {% if search_params.journal_filter %}
+            <div class="info-item">
+                <strong>期刊:</strong> {{ search_params.journal_filter }}
+            </div>
+            {% endif %}
+            {% if search_params.year_range %}
+            <div class="info-item">
+                <strong>年份:</strong> {{ search_params.year_range }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 结果统计和操作 -->
+    <div class="results-toolbar">
+        <div class="results-stats">
+            <span class="stat-item">
+                <i class="fas fa-file-alt"></i>
+                共 {{ total_articles }} 篇文章
+            </span>
+            <span class="stat-item">
+                <i class="fas fa-eye"></i>
+                第 {{ current_page }}/{{ total_pages }} 页
+            </span>
+        </div>
+        <div class="results-actions">
+            <a href="{{ url_for('history_page') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> 返回历史
+            </a>
+            <div class="export-dropdown">
+                <button class="btn btn-secondary dropdown-toggle">
+                    <i class="fas fa-download"></i> 导出
+                </button>
+                <div class="dropdown-menu">
+                    <a href="#" onclick="exportHistoryResults('json')" class="dropdown-item">
+                        <i class="fas fa-file-code"></i> JSON格式
+                    </a>
+                    <a href="#" onclick="exportHistoryResults('markdown')" class="dropdown-item">
+                        <i class="fab fa-markdown"></i> Markdown格式
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 文章列表 -->
+    <div class="articles-list">
+        {% for article in articles %}
+        <article class="article-card">
+            <div class="article-header">
+                <h3 class="article-title">{{ article.title }}</h3>
+                <div class="article-meta">
+                    <span class="journal-badge">{{ article.journal }}</span>
+                    <span class="year-badge">{{ article.year }}</span>
+                    <span class="score-badge">评分: {{ "%.1f"|format(article.score) }}</span>
+                </div>
+            </div>
+            
+            <div class="article-content">
+                <div class="article-info">
+                    <div class="info-row">
+                        <strong>作者:</strong> 
+                        {{ article.authors[:3]|join(', ') }}
+                        {% if article.authors|length > 3 %}, et al. ({{ article.authors|length }} total){% endif %}
+                    </div>
+                    {% if article.impact_factor %}
+                    <div class="info-row">
+                        <strong>影响因子:</strong> {{ article.impact_factor }}
+                    </div>
+                    {% endif %}
+                    {% if article.article_types %}
+                    <div class="info-row">
+                        <strong>文章类型:</strong> {{ article.article_types|join(', ') }}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="article-abstract">
+                    <strong>摘要:</strong>
+                    <p>{{ article.abstract }}</p>
+                </div>
+                
+                <div class="article-links">
+                    <a href="{{ article.pubmed_url }}" target="_blank" class="btn btn-sm btn-primary">
+                        <i class="fas fa-external-link-alt"></i> PubMed
+                    </a>
+                    {% if article.doi %}
+                    <a href="https://doi.org/{{ article.doi }}" target="_blank" class="btn btn-sm btn-secondary">
+                        <i class="fas fa-link"></i> DOI
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+
+    <!-- 分页 -->
+    {% if total_pages > 1 %}
+    <div class="pagination">
+        {% if current_page > 1 %}
+        <a href="?page={{ current_page - 1 }}" class="pagination-btn">
+            <i class="fas fa-chevron-left"></i> 上一页
+        </a>
+        {% endif %}
+        
+        <div class="pagination-info">
+            第 {{ current_page }} / {{ total_pages }} 页
+        </div>
+        
+        {% if current_page < total_pages %}
+        <a href="?page={{ current_page + 1 }}" class="pagination-btn">
+            下一页 <i class="fas fa-chevron-right"></i>
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const searchId = {{ search_id }};
+
+async function exportHistoryResults(format) {
+    showLoading();
+    try {
+        const response = await fetch(`/api/export_history/${searchId}/${format}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            if (format === 'json') {
+                downloadJSON(data.data, data.filename);
+            } else if (format === 'markdown') {
+                downloadText(data.content, data.filename);
+            }
+            showToast('导出成功！', 'success');
+        } else {
+            showToast(data.error || '导出失败', 'error');
+        }
+    } catch (error) {
+        showToast('导出失败，请稍后重试', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+function downloadJSON(data, filename) {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    downloadBlob(blob, filename);
+}
+
+function downloadText(content, filename) {
+    const blob = new Blob([content], { type: 'text/plain' });
+    downloadBlob(blob, filename);
+}
+
+function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// 下拉菜单功能
+document.addEventListener('DOMContentLoaded', function() {
+    const dropdown = document.querySelector('.export-dropdown');
+    if (dropdown) {
+        const toggle = dropdown.querySelector('.dropdown-toggle');
+        const menu = dropdown.querySelector('.dropdown-menu');
+        
+        toggle.addEventListener('click', function() {
+            menu.classList.toggle('show');
+        });
+        
+        document.addEventListener('click', function(e) {
+            if (!dropdown.contains(e.target)) {
+                menu.classList.remove('show');
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

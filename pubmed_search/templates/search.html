@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}搜索 - AI PubMed Search{% endblock %}
+
+{% block content %}
+<div class="search-container">
+    <div class="search-header">
+        <h1><i class="fas fa-search"></i> 文献搜索</h1>
+        <p>使用AI生成查询或手动输入PubMed搜索条件</p>
+    </div>
+
+    <form id="searchForm" class="search-form">
+        <!-- AI查询生成部分 -->
+        <div class="form-section">
+            <h3><i class="fas fa-robot"></i> AI查询生成</h3>
+            <div class="form-group">
+                <label for="userTopic">研究主题 (自然语言描述)</label>
+                <textarea id="userTopic" name="user_topic" 
+                         placeholder="例如：端粒长度与衰老和长寿的关系研究" 
+                         rows="3"></textarea>
+            </div>
+            <button type="button" id="generateQueryBtn" class="btn btn-secondary">
+                <i class="fas fa-magic"></i> 生成AI查询
+            </button>
+        </div>
+
+        <!-- 查询输入部分 -->
+        <div class="form-section">
+            <h3><i class="fas fa-code"></i> PubMed查询</h3>
+            <div class="form-group">
+                <label for="query">搜索查询 *</label>
+                <textarea id="query" name="query" required 
+                         placeholder="输入PubMed搜索查询，支持布尔逻辑" 
+                         rows="3"></textarea>
+                <small class="form-hint">支持AND、OR、NOT等布尔操作符，使用引号进行精确匹配</small>
+            </div>
+        </div>
+
+        <!-- 筛选条件 -->
+        <div class="form-section">
+            <h3><i class="fas fa-filter"></i> 筛选条件</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="journalFilter">期刊筛选</label>
+                    <input type="text" id="journalFilter" name="journal_filter" 
+                           placeholder="多个期刊用逗号分隔，留空表示所有主刊">
+                    <small class="form-hint">例如：Nature, Science, Cell</small>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="minYear">最早年份</label>
+                    <input type="number" id="minYear" name="min_year" 
+                           min="1900" max="2025" placeholder="例如：2015">
+                </div>
+                <div class="form-group">
+                    <label for="maxYear">最晚年份</label>
+                    <input type="number" id="maxYear" name="max_year" 
+                           min="1900" max="2025" placeholder="例如：2025">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="articleTypes">文章类型筛选</label>
+                <div class="checkbox-group" id="articleTypes">
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="article_types" value="all" checked>
+                        <span class="checkmark"></span>
+                        所有类型
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="article_types" value="Review">
+                        <span class="checkmark"></span>
+                        Review (综述)
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="article_types" value="Clinical Trial">
+                        <span class="checkmark"></span>
+                        Clinical Trial (临床试验)
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="article_types" value="Meta-Analysis">
+                        <span class="checkmark"></span>
+                        Meta-Analysis (荟萃分析)
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="article_types" value="Randomized Controlled Trial">
+                        <span class="checkmark"></span>
+                        Randomized Controlled Trial (随机对照试验)
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="article_types" value="Case Reports">
+                        <span class="checkmark"></span>
+                        Case Reports (病例报告)
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="article_types" value="Observational Study">
+                        <span class="checkmark"></span>
+                        Observational Study (观察性研究)
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="article_types" value="Systematic Review">
+                        <span class="checkmark"></span>
+                        Systematic Review (系统性综述)
+                    </label>
+                </div>
+                <small class="form-hint">选择您感兴趣的文章类型，可多选</small>
+            </div>
+            <div class="form-group">
+                <label for="minScore">最低评分</label>
+                <input type="number" id="minScore" name="min_score"
+                       min="0" step="0.1" placeholder="0" value="0">
+                <small class="form-hint">基于影响因子和文章类型的综合评分</small>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-large">
+                <i class="fas fa-search"></i> 开始搜索
+            </button>
+            <button type="reset" class="btn btn-secondary">
+                <i class="fas fa-undo"></i> 重置
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const generateBtn = document.getElementById('generateQueryBtn');
+    const searchForm = document.getElementById('searchForm');
+    const userTopicInput = document.getElementById('userTopic');
+    const queryInput = document.getElementById('query');
+
+    // 文章类型复选框逻辑
+    const articleTypeCheckboxes = document.querySelectorAll('input[name="article_types"]');
+    const allTypesCheckbox = document.querySelector('input[name="article_types"][value="all"]');
+
+    // "所有类型"复选框逻辑
+    allTypesCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            // 如果选择"所有类型"，取消其他选项
+            articleTypeCheckboxes.forEach(checkbox => {
+                if (checkbox !== this) {
+                    checkbox.checked = false;
+                }
+            });
+        }
+    });
+
+    // 其他复选框逻辑
+    articleTypeCheckboxes.forEach(checkbox => {
+        if (checkbox !== allTypesCheckbox) {
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    // 如果选择了具体类型，取消"所有类型"
+                    allTypesCheckbox.checked = false;
+                }
+
+                // 如果没有任何具体类型被选中，自动选择"所有类型"
+                const anySpecificTypeChecked = Array.from(articleTypeCheckboxes)
+                    .filter(cb => cb !== allTypesCheckbox)
+                    .some(cb => cb.checked);
+
+                if (!anySpecificTypeChecked) {
+                    allTypesCheckbox.checked = true;
+                }
+            });
+        }
+    });
+
+    // AI查询生成
+    generateBtn.addEventListener('click', async function() {
+        const topic = userTopicInput.value.trim();
+        if (!topic) {
+            showToast('请先输入研究主题', 'warning');
+            return;
+        }
+
+        showLoading();
+        try {
+            const response = await fetch('/api/generate_query', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ topic: topic })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                queryInput.value = data.query;
+                showToast('AI查询生成成功！', 'success');
+            } else {
+                showToast(data.error || 'AI查询生成失败', 'error');
+            }
+        } catch (error) {
+            showToast('网络错误，请稍后重试', 'error');
+        } finally {
+            hideLoading();
+        }
+    });
+
+    // 搜索表单提交
+    searchForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const formData = new FormData(searchForm);
+        const searchData = Object.fromEntries(formData.entries());
+
+        // 处理文章类型多选
+        const selectedArticleTypes = Array.from(articleTypeCheckboxes)
+            .filter(checkbox => checkbox.checked)
+            .map(checkbox => checkbox.value);
+        searchData.article_types = selectedArticleTypes;
+
+        if (!searchData.query.trim()) {
+            showToast('请输入搜索查询', 'warning');
+            return;
+        }
+
+        showLoading();
+        try {
+            const response = await fetch('/api/search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(searchData)
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // 跳转到进度页面
+                window.location.href = `/search_progress/${data.search_session_id}`;
+            } else {
+                showToast(data.error || '搜索失败', 'error');
+            }
+        } catch (error) {
+            showToast('网络错误，请稍后重试', 'error');
+        } finally {
+            hideLoading();
+        }
+    });
+});
+</script>
+{% endblock %}

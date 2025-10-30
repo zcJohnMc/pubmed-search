@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# macOS
+.DS_Store
+
+# App specific
+pubmed_search/venv/
+pubmed_search/__pycache__/
+pubmed_search/*.log
+pubmed_search/app.log
+pubmed_search/flask_session/
+pubmed_search/pubmed_search_history.db
