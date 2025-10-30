@@ -9,9 +9,9 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: OPENROUTER_API_KEY
-        sync: false
+        value: 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
       - key: PUBMED_API_KEY
-        sync: false
+        value: b6a22ac9a183cabddf8a38046641c2378308
       - key: DATABASE_PATH
         value: /tmp/pubmed_search_history.db
 
