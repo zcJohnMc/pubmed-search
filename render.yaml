@@ -13,9 +13,5 @@ services:
       - key: PUBMED_API_KEY
         sync: false
       - key: DATABASE_PATH
-        value: /var/data/pubmed_search_history.db
-    disk:
-      name: data
-      mountPath: /var/data
-      sizeGB: 1
+        value: /tmp/pubmed_search_history.db
 
