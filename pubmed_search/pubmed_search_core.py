@@ -17,8 +17,8 @@ BASE_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/"
 # OpenRouter API Configuration
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "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")
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-YOUR_SITE_URL = "http://localhost:5000"
-YOUR_SITE_NAME = "AI PubMed Query Tool"
+YOUR_SITE_URL = os.environ.get("SITE_URL", "https://pubmed-search-4nr1.onrender.com")
+YOUR_SITE_NAME = "PubMed Search Tool"
 
 # 数据库配置
 import os
