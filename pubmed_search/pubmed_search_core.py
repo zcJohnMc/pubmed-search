@@ -322,8 +322,11 @@ def generate_pubmed_query_with_ai(user_topic):
     }
 
     print("\n🤖 正在使用AI生成包容性PubMed查询...")
+    print(f"🔑 使用API密钥: {OPENROUTER_API_KEY[:20]}...{OPENROUTER_API_KEY[-10:]}")
+    print(f"🤖 使用模型: {data['model']}")
     try:
         response = requests.post(OPENROUTER_API_URL, headers=headers, data=json.dumps(data), timeout=60)
+        print(f"📡 API响应状态码: {response.status_code}")
         response.raise_for_status()
         
         response_json = response.json()
@@ -347,6 +350,7 @@ def generate_pubmed_query_with_ai(user_topic):
             
     except requests.exceptions.RequestException as e:
         print(f"❌ 调用OpenRouter API错误: {e}")
+        print(f"📄 错误响应内容: {e.response.text}")
         return None
     except Exception as e:
         print(f"❌ AI查询生成时发生意外错误: {e}")
