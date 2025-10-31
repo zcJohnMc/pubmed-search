@@ -175,6 +175,21 @@ def init_database():
     except Exception as e:
         print(f"❌ 数据库初始化失败: {e}")
 
+def generate_inclusive_fallback_query(topic):
+    """
+    生成一个简单但包容性强的fallback查询
+    当AI生成失败时使用
+
+    Args:
+        topic: 用户输入的研究主题
+
+    Returns:
+        str: 简单的PubMed查询字符串
+    """
+    # 使用tiab字段搜索标题和摘要
+    # 这是一个简单但有效的fallback策略
+    return f'("{topic}"[tiab])'
+
 def generate_pubmed_query_with_ai(user_topic):
     """
     使用AI生成PubMed搜索查询字符串

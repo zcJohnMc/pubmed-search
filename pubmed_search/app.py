@@ -8,16 +8,17 @@ import threading
 import time
 try:
     from .pubmed_search_core import (
-        init_database, generate_pubmed_query_with_ai, search_pubmed,
-        fetch_article_details, assign_scores_by_if, filter_articles, filter_articles_by_type,
-        save_search_to_database, get_search_history, get_search_by_id,
-        fetch_article_details_with_progress
+        init_database, generate_pubmed_query_with_ai, generate_inclusive_fallback_query,
+        search_pubmed, fetch_article_details, assign_scores_by_if, filter_articles,
+        filter_articles_by_type, save_search_to_database, get_search_history,
+        get_search_by_id, fetch_article_details_with_progress
     )
 except ImportError:
     from pubmed_search_core import (
-        init_database, generate_pubmed_query_with_ai, search_pubmed,
-        fetch_article_details, assign_scores_by_if, filter_articles, filter_articles_by_type,
-        save_search_to_database, get_search_history, get_search_by_id,
+        init_database, generate_pubmed_query_with_ai, generate_inclusive_fallback_query,
+        search_pubmed, fetch_article_details, assign_scores_by_if, filter_articles,
+        filter_articles_by_type, save_search_to_database, get_search_history,
+        get_search_by_id,
         fetch_article_details_with_progress
     )
 
@@ -87,29 +88,51 @@ def view_history(search_id):
 
 @app.route('/api/generate_query', methods=['POST'])
 def api_generate_query():
-    """AI生成查询API"""
+    """AI生成查询API - 带fallback机制"""
     try:
         data = request.get_json()
         user_topic = data.get('topic', '').strip()
-        
+
         if not user_topic:
             return jsonify({'success': False, 'error': '请提供研究主题'})
-        
+
+        # 尝试使用AI生成查询
         ai_query = generate_pubmed_query_with_ai(user_topic)
-        
+
         if ai_query:
             return jsonify({
                 'success': True,
                 'query': ai_query,
-                'topic': user_topic
+                'topic': user_topic,
+                'fallback_used': False
             })
         else:
+            # AI失败时使用fallback机制
+            print(f"⚠️ AI生成失败，使用fallback查询: {user_topic}")
+            fallback_query = generate_inclusive_fallback_query(user_topic)
             return jsonify({
-                'success': False,
-                'error': 'AI查询生成失败，请手动输入查询'
+                'success': True,
+                'query': fallback_query,
+                'topic': user_topic,
+                'fallback_used': True
             })
-    
+
     except Exception as e:
+        print(f"❌ API错误: {e}")
+        # 即使发生异常，也尝试返回fallback查询
+        try:
+            user_topic = request.get_json().get('topic', '').strip()
+            if user_topic:
+                fallback_query = generate_inclusive_fallback_query(user_topic)
+                return jsonify({
+                    'success': True,
+                    'query': fallback_query,
+                    'topic': user_topic,
+                    'fallback_used': True,
+                    'error_message': str(e)
+                })
+        except:
+            pass
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/search', methods=['POST'])
