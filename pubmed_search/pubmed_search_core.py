@@ -323,7 +323,9 @@ def generate_pubmed_query_with_ai(user_topic):
 
     print("\n🤖 正在使用AI生成包容性PubMed查询...")
     print(f"🔑 使用API密钥: {OPENROUTER_API_KEY[:20]}...{OPENROUTER_API_KEY[-10:]}")
+    print(f"🌐 使用Site URL: {YOUR_SITE_URL}")
     print(f"🤖 使用模型: {data['model']}")
+    print(f"📤 请求Headers: {json.dumps({k: v[:50] + '...' if k == 'Authorization' else v for k, v in headers.items()}, indent=2)}")
     try:
         response = requests.post(OPENROUTER_API_URL, headers=headers, data=json.dumps(data), timeout=60)
         print(f"📡 API响应状态码: {response.status_code}")
