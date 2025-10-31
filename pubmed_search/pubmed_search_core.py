@@ -15,7 +15,7 @@ PUBMED_API_KEY = os.environ.get("PUBMED_API_KEY", "b6a22ac9a183cabddf8a38046641c
 BASE_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/"
 
 # OpenRouter API Configuration
-OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "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")
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "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")
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 YOUR_SITE_URL = "http://localhost:5000"
 YOUR_SITE_NAME = "AI PubMed Query Tool"
@@ -315,7 +315,7 @@ def generate_pubmed_query_with_ai(user_topic):
     }
     
     data = {
-        "model": "anthropic/claude-4.5-sonnet",
+        "model": "anthropic/claude-haiku-4.5",  # 使用更便宜的Haiku模型
         "messages": [{"role": "user", "content": prompt_xml_md}],
         "temperature": 0.4,  # 降低温度以获得更一致的结果
         "top_p": 0.8,        # 稍微降低以提高质量
